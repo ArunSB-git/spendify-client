@@ -26,6 +26,49 @@ export default function Dashboard({ theme, toggleTheme }) {
 const [deleteDialog, setDeleteDialog] = useState(false);
 const [deleteTransactionId, setDeleteTransactionId] = useState(null);
 
+const [addDialog, setAddDialog] = useState(false);
+const [addAmount, setAddAmount] = useState("");
+const [addTransaction, setAddTransaction] = useState(null);
+
+const openAddAmountDialog = (tx) => {
+  setAddTransaction(tx);
+  setAddAmount("");
+  setAddDialog(true);
+};
+
+const handleAddAmount = async () => {
+  if (!addAmount || parseFloat(addAmount) <= 0) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/transactions/add-amount`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        transactionId: addTransaction.id,
+        amountToAdd: parseFloat(addAmount),
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setDialogMessage("Amount added successfully");
+      setShowDialog(true);
+      setAddDialog(false);
+      await loadTransactions(); // 🔄 refresh table
+    } else {
+      setDialogMessage(data.message || "Failed to add amount");
+      setShowDialog(true);
+    }
+  } catch (err) {
+    console.error(err);
+    setDialogMessage("Failed to add amount");
+    setShowDialog(true);
+  }
+};
+
+
   // Load banks from API
   const loadBanks = async () => {
     try {
@@ -253,7 +296,7 @@ const handleDeleteTransaction = async () => {
                 <th style={{ ...s.th, width: "10%" }}>Type</th>
                 <th style={{ ...s.th, width: "12%" }}>Amount</th>
                 <th style={{ ...s.th, width: "18%" }}>Last Updated</th>
-                <th style={{ ...s.th, width: "28%" }}>Description</th>
+                <th style={{ ...s.th, width: "28%" }}>Bank  Account Name</th>
                 <th style={{ ...s.th, width: "8%" }}>Actions</th>
               </tr>
             </thead>
@@ -272,6 +315,7 @@ const handleDeleteTransaction = async () => {
                   </td>
                   <td style={s.td}>
                     <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                       <button style={s.addBtn} onClick={() => openAddAmountDialog(tx)}>➕</button>
                       <button style={s.editBtn} onClick={() => openEditDialog(tx)}>✏️</button>
                       <button style={s.deleteBtn} onClick={() => confirmDeleteTransaction(tx.id)}>🗑</button>
 
@@ -308,6 +352,34 @@ const handleDeleteTransaction = async () => {
     </div>
   </div>
 )}
+{/* Add Amount Dialog */}
+{addDialog && (
+  <div style={s.dialogOverlay}>
+    <div style={s.dialog}>
+      <h3>Add Amount</h3>
+
+<p style={{ marginBottom: "8px" }}>
+  <strong>Transaction Name:</strong>{" "}
+  {addTransaction?.transactionName}
+
+      </p>
+
+      <input
+        type="number"
+        placeholder="Enter amount to add"
+        value={addAmount}
+        onChange={(e) => setAddAmount(e.target.value)}
+        style={{ ...s.input, marginBottom: "12px" }}
+      />
+
+      <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
+        <button style={s.addBtn} onClick={handleAddAmount}>Add</button>
+        <button style={s.deleteBtn} onClick={() => setAddDialog(false)}>Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
+
 
 
       {/* Edit dialog */}
