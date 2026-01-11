@@ -17,9 +17,12 @@ import {
 
 /* 🔹 MUI Icons */
 import AddCircleIcon from '@mui/icons-material/AddCircleOutlineRounded';
-import EditIcon from '@mui/icons-material/UpgradeSharp';
+import CreateIcon from '@mui/icons-material/UpgradeSharp';
 import DeleteIcon from '@mui/icons-material/DeleteOutlineSharp';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineSharp';
+import AddBoxOutlinedIcon from '@mui/icons-material/AddBoxOutlined';
+import EditIcon from '@mui/icons-material/Edit';
+
 
 /* 🔹 Sample chart data */
 const sampleLineData = [
@@ -57,19 +60,46 @@ function stringToColor(str, theme) {
   return `hsl(${h},${s}%,${l}%)`;
 }
 
+const getAmountColor = (action) => {
+  switch (action) {
+    case "Created a new transaction":
+      return "green";
+
+    case "Amount for this transaction has been updated":
+      return "#DAA520";
+
+    case "Added money to this existing transaction":
+      return "#1976d2";
+
+    case "DELETE":
+      return "red";
+
+    default:
+      return "gray";
+  }
+};
+
+
 /* 🔹 Action icon mapper */
 const getActionIcon = (action) => {
   switch (action) {
-    case "CREATE":
-      return <AddCircleIcon sx={{ color: "green" }} />;
-    case "UPDATE":
+    case "Created a new transaction":
+      return <AddBoxOutlinedIcon sx={{ color: "green" }} />;
+
+    case "Amount for this transaction has been updated":
       return <EditIcon sx={{ color: "#DAA520" }} />;
+
+    case "Added money to this existing transaction": // ✅ 4th case
+      return <CreateIcon sx={{ color: "#1976d2" }} />; // blue add icon
+
     case "DELETE":
       return <DeleteIcon sx={{ color: "red" }} />;
+
     default:
       return <HelpOutlineIcon sx={{ color: "gray" }} />;
   }
 };
+
 
 export default function Statistics({ theme, toggleTheme }) {
   const [lineData] = useState(sampleLineData);
@@ -282,17 +312,31 @@ disabledBtn: {
             <table style={s.table}>
               <thead>
                 <tr>
+
+                  <th style={s.th}>Transaction Name</th>
+                  <th style={s.th}>Transaction Type</th>
+                  <th style={s.th}>Transaction Amount</th>
                   <th style={s.th}>Action</th>
-                  <th style={s.th}>Name</th>
-                  <th style={s.th}>Type</th>
-                  <th style={s.th}>Amount</th>
                   <th style={s.th}>Last Updated At</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedLogs.map(log => (
                   <tr key={log.id}>
-<td
+
+
+                    <td style={s.td}>{log.name}</td>
+                    <td style={s.td}>{log.type}</td>
+                    <td
+  style={{
+    ...s.td,
+    color: getAmountColor(log.action)
+  }}
+>
+  {log.amount.toLocaleString()}
+</td>
+
+                    <td
   style={{
     ...s.td, // merge the original td styles
     display: "flex",
@@ -303,10 +347,6 @@ disabledBtn: {
   {getActionIcon(log.action)}
   <span>{log.action}</span>
 </td>
-
-                    <td style={s.td}>{log.name}</td>
-                    <td style={s.td}>{log.type}</td>
-                    <td style={s.td}>{log.amount.toLocaleString()}</td>
                     <td style={s.td}>{log.createdAt}</td>
                   </tr>
                 ))}
