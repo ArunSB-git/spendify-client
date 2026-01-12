@@ -151,28 +151,34 @@ const confirmDeleteTransaction = (id) => {
 // Actual delete API call
 const handleDeleteTransaction = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/transactions/${deleteTransactionId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    const data = await res.json();
+    const res = await fetch(
+      `${API_BASE_URL}/api/transactions/${deleteTransactionId}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
 
     if (res.ok) {
       setDialogMessage("Transaction deleted successfully");
+      await loadTransactions();
     } else {
-      setDialogMessage(data.message || "Delete failed");
+      setDialogMessage(
+        "Error occurred while deleting this transaction. Please try again or contact the administrator"
+      );
     }
 
-    setShowDialog(true);
-    setDeleteDialog(false);
-    await loadTransactions();
   } catch (err) {
     console.error(err);
-    setDialogMessage("Delete failed");
-    setShowDialog(true);
+    setDialogMessage(
+      "Error occurred while deleting this transaction. Please try again or contact the administrator"
+    );
+  } finally {
     setDeleteDialog(false);
+    setShowDialog(true);
   }
 };
+
 
 
   // Open edit dialog

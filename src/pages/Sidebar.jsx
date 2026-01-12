@@ -23,7 +23,7 @@ export default function TopBar({ theme, toggleTheme }) {
       }}
     >
       {/* Left Section: Title */}
-      <h2 style={{ color: theme.text, margin: 0 }}>Trackify</h2>
+      <h2 style={{ color: theme.text, margin: 0 }}>SPENDIFY</h2>
 
       {/* Center Section: Navigation Buttons */}
       <Stack direction="row" spacing={1}>
