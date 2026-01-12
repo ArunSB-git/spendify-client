@@ -120,7 +120,36 @@ const [pieType, setPieType] = useState("MONTH");
 const [lineKeys, setLineKeys] = useState([]);
 
 const [lineTxnType, setLineTxnType] = useState("CREDIT");
+const [varianceData, setVarianceData] = useState([]);
 
+
+useEffect(() => {
+  const year = new Date().getFullYear();
+
+  fetch(`${API_BASE_URL}/api/transactions/yearly-credit-debit-amount?year=${year}`, {
+    credentials: "include",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+      "Content-Type": "application/json"
+    }
+  })
+    .then(res => res.json())
+    .then(data => {
+      const months = [
+        "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+        "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+      ];
+
+      const formatted = data.map(item => ({
+        month: months[item.month - 1],
+        Credit: item.creditAmount,
+        Debit: item.debitAmount
+      }));
+
+      setVarianceData(formatted);
+    })
+    .catch(console.error);
+}, []);
 
 
 useEffect(() => {
@@ -444,14 +473,31 @@ disabledBtn: {
 >
 
               <ResponsiveContainer width="100%" height="70%">
-                <BarChart data={barData}>
-                  <XAxis dataKey="month" stroke={theme.text} />
-                  <YAxis stroke={theme.text} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Planned" fill={theme.highlight} />
-                  <Bar dataKey="Actual" fill={theme.progressCircle} />
-                </BarChart>
+<ResponsiveContainer width="100%" height="100%">
+<ResponsiveContainer width="100%" height="100%">
+  <BarChart data={varianceData}>
+    
+    <XAxis 
+      dataKey="month" 
+      stroke={theme.text} 
+      interval={0}       // 👈 show every month
+      angle={-45}        // 👈 rotate for better fit
+      textAnchor="end"   // 👈 needed when rotating
+    />
+    <YAxis stroke={theme.text} />
+    <Tooltip />
+        <Legend
+      verticalAlign="bottom"  // 👈 move legend below the chart
+      align="center"           // center it horizontally
+      wrapperStyle={{ paddingTop: 20 }} // optional spacing
+    />
+    <Bar dataKey="Credit" fill={stringToColor("Credit", theme.mode)} radius={[6, 6, 0, 0]} />
+    <Bar dataKey="Debit" fill={stringToColor("Debit", theme.mode)} radius={[6, 6, 0, 0]} />
+  </BarChart>
+</ResponsiveContainer>
+
+</ResponsiveContainer>
+
               </ResponsiveContainer>
             </div>
           </div>
