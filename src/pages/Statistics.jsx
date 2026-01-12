@@ -24,6 +24,10 @@ import AddBoxOutlinedIcon from '@mui/icons-material/AddBoxOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 
 
+
+
+
+
 /* 🔹 Sample chart data */
 const sampleLineData = [
   { month: "JAN 2026", Salary: 1200, Bonus: 500 },
@@ -33,9 +37,7 @@ const sampleLineData = [
 ];
 
 const samplePieData = [
-  { name: "Food", value: 400 },
-  { name: "Rent", value: 1000 },
-  { name: "Entertainment", value: 250 }
+  { name: "Not Loading", value: 400 }
 ];
 
 const sampleBarData = [
@@ -102,14 +104,105 @@ const getActionIcon = (action) => {
 
 
 export default function Statistics({ theme, toggleTheme }) {
-  const [lineData] = useState(sampleLineData);
-  const [pieData] = useState(samplePieData);
+
+const [pieData, setPieData] = useState(samplePieData);
   const [barData] = useState(sampleBarData);
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState(null);
+// 🔹 Pie filters
+const currentDate = new Date();
+const [pieType, setPieType] = useState("MONTH");
 
   /* 🔹 Pagination state */
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [lineData, setLineData] = useState([]);
+const [lineKeys, setLineKeys] = useState([]);
+
+const [lineTxnType, setLineTxnType] = useState("CREDIT");
+
+
+
+useEffect(() => {
+  const year = new Date().getFullYear();
+
+  fetch(
+    `${API_BASE_URL}/api/transactions/yearly-summary?year=${year}&transactionType=${lineTxnType}`,
+    {
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json"
+      }
+    }
+  )
+    .then(res => res.json())
+    .then(apiData => {
+      const months = [
+        "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+        "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+      ];
+
+      const allKeys = new Set();
+      const formatted = apiData.map(item => {
+        const row = {
+          month: `${months[item.month - 1]} ${year}`
+        };
+
+        item.transactions.forEach(tx => {
+          row[tx.transactionName] = tx.amount;
+          allKeys.add(tx.transactionName);
+        });
+
+        return row;
+      });
+
+      setLineData(formatted);
+      setLineKeys([...allKeys]);
+    })
+    .catch(console.error);
+}, [lineTxnType]); // 👈 IMPORTANT
+
+
+
+/* 🔹 Fetch Pie chart data */
+useEffect(() => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  let url = `${API_BASE_URL}/api/transactions/pie?type=${pieType}`;
+
+  if (pieType === "MONTH") {
+    url += `&year=${currentYear}&month=${currentMonth}`;
+  }
+
+  if (pieType === "YEAR") {
+    url += `&year=${currentYear}`;
+  }
+
+  fetch(url, {
+    credentials: "include",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+      "Content-Type": "application/json"
+    }
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to fetch pie data");
+      return res.json();
+    })
+    .then(data => {
+      const formatted = data.map(item => ({
+        name: item.transactionName,
+        value: Number(item.amount)
+      }));
+      setPieData(formatted);
+    })
+    .catch(err => console.error(err));
+}, [pieType]);
+
+
 
   /* 🔹 Fetch transaction logs */
   useEffect(() => {
@@ -246,52 +339,110 @@ disabledBtn: {
       <Sidebar theme={theme} toggleTheme={toggleTheme} />
 
       <div style={s.main}>
-        <h1>Statistics</h1>
+        <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "10px"
+  }}
+>
+  <h1 style={{ margin: 0 }}>Statistics</h1>
+
+  {/* 🔹 Credit / Debit dropdown */}
+  <select
+    value={lineTxnType}
+    onChange={e => setLineTxnType(e.target.value)}
+    style={{
+      padding: "6px 12px",
+      borderRadius: "6px",
+      border: `1px solid ${theme.border}`,
+      background: theme.mainBackground,
+      color: theme.text,
+      cursor: "pointer",
+      minWidth: "120px"
+    }}
+  >
+    <option value="CREDIT">Credit</option>
+    <option value="DEBIT">Debit</option>
+  </select>
+</div>
+
 
         {error && <div style={{ color: "red" }}>{error}</div>}
 
         {/* 🔹 LINE CHART */}
         <div style={s.topSection}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={lineData}>
-              <XAxis dataKey="month" stroke={theme.text} />
-              <YAxis stroke={theme.text} />
-              <Tooltip />
-              <Legend />
-              {Object.keys(lineData[0])
-                .filter(k => k !== "month")
-                .map(key => (
-                  <Line
-                    key={key}
-                    dataKey={key}
-                    stroke={stringToColor(key, theme.mode)}
-                    strokeWidth={2}
-                  />
-                ))}
-            </LineChart>
-          </ResponsiveContainer>
+
+<ResponsiveContainer width="100%" height="100%">
+  <LineChart data={lineData}>
+    <XAxis dataKey="month" stroke={theme.text} />
+    <YAxis stroke={theme.text} />
+    <Tooltip />
+
+
+    {lineKeys.map(key => (
+      <Line
+        key={key}
+        type="monotone"
+        dataKey={key}
+        stroke={stringToColor(key, theme.mode)}
+        strokeWidth={2}
+        dot={{ r: 3 }}
+      />
+    ))}
+  </LineChart>
+</ResponsiveContainer>
+
         </div>
 
         {/* 🔹 BOTTOM */}
         <div style={s.bottomSection}>
           <div style={s.leftColumn}>
-            {/* PIE */}
-            <div style={s.chartBox}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" outerRadius={100}>
-                    {pieData.map((e, i) => (
-                      <Cell key={i} fill={stringToColor(e.name, theme.mode)} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+{/* PIE */}
+<div style={s.chartBox}>
+
+{/* 🔹 Pie Filter – Full width */}
+<div style={{ width: "100%", marginBottom: "8px" }}>
+  <select
+    value={pieType}
+    onChange={e => setPieType(e.target.value)}
+    style={{
+      width: "100%",
+      padding: "8px 10px",
+      borderRadius: "6px",
+      border: `1px solid ${theme.border}`,
+      background: theme.mainBackground,
+      color: theme.text,
+      outline: "none",
+      cursor: "pointer"
+    }}
+  >
+    <option value="TODAY">Today</option>
+    <option value="MONTH">This Month</option>
+    <option value="YEAR">This Year</option>
+  </select>
+</div>
+
+
+  {/* 🔹 Pie Chart */}
+  <ResponsiveContainer width="100%" height="100%">
+    <PieChart>
+      <Pie data={pieData} dataKey="value" outerRadius={90}>
+        {pieData.map((e, i) => (
+          <Cell key={i} fill={stringToColor(e.name, theme.mode)} />
+        ))}
+      </Pie>
+      <Tooltip />
+    </PieChart>
+  </ResponsiveContainer>
+
+</div>
 
             {/* BAR */}
-            <div style={s.chartBox}>
+            <div style={s.chartBox}
+>
+
               <ResponsiveContainer width="100%" height="70%">
                 <BarChart data={barData}>
                   <XAxis dataKey="month" stroke={theme.text} />
