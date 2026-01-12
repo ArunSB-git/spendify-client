@@ -92,7 +92,7 @@ const getActionIcon = (action) => {
     case "Added money to this existing transaction": // ✅ 4th case
       return <CreateIcon sx={{ color: "#1976d2" }} />; // blue add icon
 
-    case "DELETE":
+    case "Transaction was deleted":
       return <DeleteIcon sx={{ color: "red" }} />;
 
     default:
