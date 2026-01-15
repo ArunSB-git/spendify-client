@@ -27,6 +27,7 @@ switchCheckedTransform: "translateX(20px)",
  // moves right for dark
   themeIcon: LightModeIcon,
    themeIconColor: "#facc15",
+   logoutDialogBox:"#5b5c61"
 };
 
 
@@ -57,6 +58,6 @@ switchThumb: "#16a34a",
 switchCheckedTransform: "translateX(0px)", // stays left for light
 themeIcon: CircleIcon,
 themeIconColor: "#000000",
-
+logoutDialogBox:"#cbcbcb"
 };
 
