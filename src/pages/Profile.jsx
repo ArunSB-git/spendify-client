@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
+import { useNavigate } from "react-router-dom";
+
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const GITHUB=import.meta.env.VITE_GITHUB_URL;
+const LINKEDIN=import.meta.env.VITE_LINKEDIN_URL;
+const TRACKIFY=import.meta.env.VITE_TRACKIFY_URL;
+const PORTFOLIO=import.meta.env.VITE_PORTFOLIO_URL;
 
 export default function ProfilePage({ theme, toggleTheme }) {
   const [query, setQuery] = useState("");
@@ -16,6 +23,47 @@ export default function ProfilePage({ theme, toggleTheme }) {
 
   const [user, setUser] = useState(null);
   const isOnline = navigator.onLine;
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+  try {
+    await fetch(`${API_BASE_URL}/api/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (err) {
+    console.error("Logout failed", err);
+  } finally {
+    localStorage.removeItem("token"); // optional but recommended
+    setShowLogoutDialog(false);
+    navigate("/login");
+  }
+};
+
+const handleDeleteAccount = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/delete`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error("Delete failed");
+    }
+  } catch (err) {
+    console.error("Delete account failed", err);
+  } finally {
+    // cleanup like logout
+    localStorage.removeItem("token");
+    setShowDeleteDialog(false);
+    navigate("/login");
+  }
+};
+
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/users/me`, {
@@ -68,14 +116,14 @@ export default function ProfilePage({ theme, toggleTheme }) {
   image: "/circle-cropped.png", // from public folder
   onClick: () =>
     window.open(
-      "https://trackify-client-wy2i.onrender.com/",
+      TRACKIFY,
       "_blank"
     )
 }
 ,
     {
       name: "Import Data",
-      description: "Upload your data",
+      description: "Upload your data ⚠️ (Work in Progress)",
       image: `https://img.icons8.com/ios-filled/100/${theme.progressCircle.replace(
         "#",
         ""
@@ -89,7 +137,7 @@ export default function ProfilePage({ theme, toggleTheme }) {
     },
     {
       name: "Download Statistics",
-      description: "Export your stats",
+      description: "Export your stats ⚠️ (Work in Progress)",
       image: `https://img.icons8.com/ios-filled/100/${theme.progressCircle.replace(
         "#",
         ""
@@ -114,18 +162,62 @@ export default function ProfilePage({ theme, toggleTheme }) {
       )}/logout-rounded.png`,
       onClick: () => setShowLogoutDialog(true)
     },
-    {
-      name: "Contribute on GitHub",
-      description: "Open repository",
-      image: `https://img.icons8.com/ios-glyphs/90/${theme.progressCircle.replace(
-        "#",
-        ""
-      )}/github.png`,
-      onClick: () => window.open("https://github.com/", "_blank")
-    }
+  {
+    name: "Social Profile",
+    socialLinks: [
+      { icon: "github", url: GITHUB },
+      { icon: "linkedin", url: LINKEDIN },
+      { icon: "portfolio", url: PORTFOLIO },
+      { icon: "resume", url: "/SDE_CV.pdf" }
+    ]
+  }
   ];
 
   const s = {
+
+socialIconsRow: {
+  display: "flex",
+  justifyContent: "center",
+  gap: "24px",      // space between icons
+  marginTop: "6px"   // space between icons and legend
+},
+
+socialIconImg: {
+  width: "70px",       // increased from 36px
+  height: "70px",      // increased from 36px
+  cursor: "pointer",
+  transition: "transform 0.2s ease, opacity 0.2s ease",
+},
+
+
+
+modalOverlay: {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.5)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000
+},
+
+modalBox: {
+  
+  padding: "25px",
+  borderRadius: "12px",
+  width: "520px",
+  position: "relative"
+},
+
+closeIcon: {
+  position: "absolute",
+  top: "10px",
+  right: "15px",
+  cursor: "pointer",
+  fontSize: "18px"
+},
+
+
     page: {
       display: "flex",
       flexDirection: "column",
@@ -239,7 +331,7 @@ sendButton: {
       flexDirection: "column",
       alignItems: "center",
       padding: "18px",
-      gap: "12px"
+      gap: "1px"
     },
     blockImage: {
       width: "70px",
@@ -316,30 +408,206 @@ sendButton: {
         </div>
 
         {/* 🔹 ACTION BLOCKS */}
-        <ul style={s.grid}>
-          {blocks.map(block => (
-            <li
-              key={block.name}
-              style={s.gridItem}
-              onClick={block.onClick}
-              onMouseEnter={e =>
-                (e.currentTarget.style.transform = "translateY(-5px)")
-              }
-              onMouseLeave={e =>
-                (e.currentTarget.style.transform = "translateY(0)")
-              }
-            >
-              <figure style={s.figure}>
-                <img src={block.image} alt="" style={s.blockImage} />
-                <figcaption>
-                  <h3 style={s.blockTitle}>{block.name}</h3>
-                  <p style={s.blockDesc}>{block.description}</p>
-                </figcaption>
-              </figure>
-            </li>
-          ))}
-        </ul>
+<ul style={s.grid}>
+  {blocks.map(block => (
+    <li
+      key={block.name}
+      style={s.gridItem}
+      onClick={block.onClick}
+      onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-5px)")}
+      onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}
+    >
+      <figure style={s.figure}>
+        {/* Normal image blocks */}
+        {block.image && <img src={block.image} alt="" style={s.blockImage} />}
+
+        {/* Title */}
+        {block.name && <h3 style={s.blockTitle}>{block.name}</h3>}
+
+        {/* Social Profile icons */}
+        {block.socialLinks && (
+          <div style={s.socialIconsRow}>
+            {block.socialLinks.map(link => (
+              <img
+                key={link.icon}
+                src={`https://img.icons8.com/ios-filled/100/${theme.progressCircle.replace("#", "")}/${link.icon}.png`}
+                alt={link.icon}
+                style={s.socialIconImg}
+                onClick={() => window.open(link.url, "_blank")}
+                onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.2)")}
+                onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Legend only for social block */}
+        {block.legend && (
+          <p style={{ ...s.blockDesc, marginTop: "12px" }}>{block.legend}</p>
+        )}
+
+        {/* Description for other blocks */}
+        {!block.socialLinks && block.description && (
+          <p style={s.blockDesc}>{block.description}</p>
+        )}
+      </figure>
+    </li>
+  ))}
+</ul>
+
+      </div>
+{/* 🔹 LOGOUT CONFIRMATION MODAL */}
+{showLogoutDialog && (
+  <div style={s.modalOverlay}>
+    <div
+      style={{
+        ...s.modalBox,
+        background: theme.logoutDialogBox,
+        width: "360px"
+      }}
+    >
+      <span
+        style={{ ...s.closeIcon, color: theme.text }}
+        onClick={() => setShowLogoutDialog(false)}
+      >
+        ✕
+      </span>
+
+      <h2
+        style={{
+          textAlign: "center",
+          color: theme.text
+        }}
+      >
+        Confirm Logout
+      </h2>
+
+      <p
+        style={{
+          marginTop: "15px",
+          fontSize: "14px",
+          color: theme.blockText,
+          textAlign: "center"
+        }}
+      >
+        Are you sure you want to logout?
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "20px",
+          marginTop: "25px"
+        }}
+      >
+        <button
+          style={{
+            background: "#ef4444",
+            color: theme.inputBackground,
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "6px",
+            cursor: "pointer"
+          }}
+          onClick={handleLogout}
+        >
+          Yes
+        </button>
+
+        <button
+          style={{
+            background: "#4cbb17",
+            color: theme.inputBackground,
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "6px",
+            cursor: "pointer"
+          }}
+          onClick={() => setShowLogoutDialog(false)}
+        >
+          No
+        </button>
       </div>
     </div>
+  </div>
+)}
+
+{/* 🔹 DELETE CONFIRMATION MODAL */}
+{showDeleteDialog && (
+  <div style={s.modalOverlay}>
+    <div
+      style={{
+        ...s.modalBox,
+        background: theme.logoutDialogBox,
+        width: "380px",
+      }}
+    >
+      <span
+        style={{ ...s.closeIcon, color: theme.text }}
+        onClick={() => setShowDeleteDialog(false)}
+      >
+        ✕
+      </span>
+
+      <h2 style={{ textAlign: "center", color: theme.text }}>
+        Delete Account
+      </h2>
+
+      <p
+        style={{
+          marginTop: "15px",
+          fontSize: "14px",
+          color: theme.blockText,
+          textAlign: "center",
+        }}
+      >
+        This action is permanent.  
+        All your data will be deleted.
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "20px",
+          marginTop: "25px",
+        }}
+      >
+        <button
+          style={{
+            background: "#ef4444",
+            color: theme.inputBackground,
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+          onClick={handleDeleteAccount}
+        >
+          Delete
+        </button>
+
+        <button
+          style={{
+            background: "#4cbb17",
+            color: theme.inputBackground,
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+          onClick={() => setShowDeleteDialog(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+    </div>
+    
   );
 }
